@@ -1,5 +1,8 @@
 Revision history for Perl module Data::Structure::Util
 
+0.09 Fri Mar 26 15:10:00 2004
+  - Updated tests to pass on perls without unicode - Tom Insam and Jeremy Yoder
+  - Updated doc
 
 0.08 Mon Jan 20 12:00:00 2004
   - Fixed memory leaks (very embarassing I must admit) - Thanks Richard Clamp

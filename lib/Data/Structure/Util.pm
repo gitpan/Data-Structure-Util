@@ -12,7 +12,7 @@ require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
-$VERSION = '0.08';
+$VERSION = '0.09';
 BEGIN {
   if ($] < 5.008) {
     @EXPORT_OK = qw(unbless get_blessed get_refs has_circular_ref circular_off signature);
@@ -76,7 +76,7 @@ Data::Structure::Util - Change nature of data within a structure
 
 =head1 SYNOPSIS
 
-  use Data::Structure::Util qw(has_utf8 utf8_off utf8_on unbless get_blessed has_circular_ref);
+  use Data::Structure::Util qw(has_utf8 utf8_off utf8_on unbless get_blessed get_refs has_circular_ref circular_off signature);
   
   $data = {
             key1 => 'hello',

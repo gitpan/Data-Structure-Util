@@ -8,17 +8,21 @@ use lib 'lib';
 
 
 BEGIN {
+  eval { require Test::Pod; };
+  if ($@) {
+    print "1..0 # Skipped - do not have Test::Pod installed\n";
+    exit;
+  }
+
   eval { require File::Find::Rule; };
   if ($@) {
     print "1..0 # Skipped - do not have File::Find::Rule installed\n";
     exit;
   }
-}
-
-BEGIN {
-  use File::Find::Rule;
+  
   @classes = File::Find::Rule->file()->name('*.pm')->in('blib/lib');
 }
+
 
 use Test::Pod tests => scalar @classes;
 
