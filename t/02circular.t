@@ -11,7 +11,7 @@ our $WEAKEN;
 BEGIN {
   eval q{ use Scalar::Util qw(weaken isweak) };
   if (! $@ and defined &Scalar::Util::weaken) {
-    eval q{ use Test::Simple tests => 16 };
+    eval q{ use Test::Simple tests => 19 };
     $WEAKEN = 1 ;
   }
   else {
@@ -99,6 +99,19 @@ if ($WEAKEN) {
   weaken($obj7->{key1}->{key11});
   ok(isweak($obj7->{key1}->{key11}), "has weaken reference");
   ok(! has_circular_ref($obj7), "No more circular reference");
+
+  my $obj8 = bless {
+                    key1 => bless {
+                                    parent => undef,
+                                  } => 'Bar',
+                  } => 'Foo';
+  $obj8->{key1}->{parent} = $obj8;
+  ok( has_circular_ref($obj8), "Got circular");
+  my $obj81 = $obj8->{key1};
+  weaken( $obj8->{key1} );
+  ok( isweak( $obj8->{key1} ), "is weak");
+  ok( ! has_circular_ref($obj8), "Got no circular");
+
 }
 else {
   warn "Scalar::Util XS version not installed, some tests skipped\n";

@@ -15,7 +15,7 @@ BEGIN {
     exit;
   }
   else {
-    eval q{ use Test::More tests => 23 };
+    eval q{ use Test::More tests => 32 };
   }
 }
 
@@ -111,6 +111,32 @@ my $spy;
 }
 ok(! $spy, "No memory leak");
 
+
+
+my $obj8 = bless {
+                  key1 => bless {
+                                  parent => undef,
+                                } => 'Bar',
+                 } => 'Foo';
+$obj8->{key1}->{parent} = $obj8;
+ok( has_circular_ref($obj8), "Got circular");
+is( circular_off($obj8), 1, "removed circular");
+ok( isweak( $obj8->{key1}->{parent} ), "is weak");
+ok( ! has_circular_ref($obj8), "no circular");
+ok( ! circular_off($obj8), "removed circular");
+
+my $obj9 = bless {
+                  key1 => bless {
+                                  parent => undef,
+                                } => 'Bar',
+                 } => 'Foo';
+$obj9->{key1}->{parent} = $obj9;
+ok( has_circular_ref($obj9), "got circular");
+my $obj91 = $obj9->{key1};
+weaken( $obj9->{key1} );
+ok( isweak( $obj9->{key1} ), "is weak");
+ok( ! has_circular_ref($obj9), "no circular");
+ok( ! circular_off($obj9), "no circular");
 
 # This test is failing - don't know why - I suspect perl 5.8.0
 # my $obj8 = [];

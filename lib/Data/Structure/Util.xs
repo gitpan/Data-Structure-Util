@@ -220,7 +220,7 @@ AV* _get_blessed(SV* sv, HV* seen, AV* objects) {
 Detects if there is a circular reference
 
 */
-SV* _has_circular_ref(SV* sv, HV* parents) {
+SV* _has_circular_ref(SV* sv, HV* parents, HV* seen) {
 
   SV* ret;
   SV* found;
@@ -229,11 +229,12 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
   SV** AValue;
   HV* myHash;
   HE* HEntry;
+  SV** HValue;
 #if dsDEBUG
   char errmsg[100];
 #endif
 
-  if (SvROK(sv)) { // Reference
+  if (SvROK(sv)) { /* Reference */
 
     char addr[PTRLEN];
     sprintf(addr, "%p", SvRV(sv));
@@ -253,17 +254,32 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
       }
 #endif
     }
+    if (hv_exists(seen, addr, len)) {
+      dsWARN("circular reference on weak ref");
+      return &PL_sv_undef;
+    }
 
     hv_store(parents, addr, len,  NULL, 0);
-    ret = _has_circular_ref(SvRV(sv), parents);
+    hv_store(seen, addr, len,  NULL, 0);
+#ifdef SvWEAKREF
+    if (SvWEAKREF(sv)) {
+      dsWARN("found a weak reference 2");
+      ret = _has_circular_ref(SvRV(sv), newHV(), seen);
+    } else {
+#endif
+      ret = _has_circular_ref(SvRV(sv), parents, seen);
+#ifdef SvWEAKREF
+    }
+#endif
+    hv_delete(seen, addr, (U32) len, 0);
     hv_delete(parents, addr, (U32) len, 0);
     return ret;
   }
 
-  // Not a reference
+  /* Not a reference */
   switch (SvTYPE(sv)) {
 
-    case SVt_PVAV: { // Array
+    case SVt_PVAV: { /* Array */
       dsWARN("Array");
       for(i = 0; i <= av_len((AV*) sv); i++) {
 #if dsDEBUG
@@ -271,13 +287,13 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
         warn(errmsg);
 #endif
         AValue = av_fetch((AV*) sv, i, 0);
-        found = _has_circular_ref(*AValue, parents);
+        found = _has_circular_ref(*AValue, parents, seen);
         if (SvOK(found))
           return found;
       }
       break;
     }
-    case SVt_PVHV: { // Hash
+    case SVt_PVHV: { /* Hash */
       dsWARN("Hash");
       myHash = (HV*) sv;
       hv_iterinit(myHash);
@@ -288,7 +304,7 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
           sprintf(errmsg, "NEXT KEY is %s\n", HKey);
           warn(errmsg);
 #endif
-        found = _has_circular_ref(HeVAL(HEntry), parents);
+        found = _has_circular_ref(HeVAL(HEntry), parents, seen);
         if (SvOK(found))
           return found;
       }
@@ -304,7 +320,7 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
 Weaken any circular reference found
 
 */
-SV* _circular_off(SV *sv, HV *parents, SV *counter) {
+SV* _circular_off(SV *sv, HV *parents, HV *seen, SV *counter) {
 
   U32 len;
   I32 i;
@@ -316,7 +332,7 @@ SV* _circular_off(SV *sv, HV *parents, SV *counter) {
   char errmsg[100];
 #endif
 
-  if (SvROK(sv)) { // Reference
+  if (SvROK(sv)) { /* Reference */
 
     sprintf(addr, "%p", SvRV(sv));
     len = strlen(addr);
@@ -330,17 +346,34 @@ SV* _circular_off(SV *sv, HV *parents, SV *counter) {
         sv_inc(counter);
       }
     } else {
+      
+      if (hv_exists(seen, addr, len)) {
+        dsWARN("circular reference on weak ref");
+        return &PL_sv_undef;
+      }
+
       hv_store(parents, addr, len,  NULL, 0);
-      _circular_off(SvRV(sv), parents, counter);
+      hv_store(seen, addr, len,  NULL, 0);
+#ifdef SvWEAKREF
+      if (SvWEAKREF(sv)) {
+        dsWARN("found a weak reference 2");
+        _circular_off(SvRV(sv), newHV(), seen, counter);
+      } else {
+#endif
+        _circular_off(SvRV(sv), parents, seen, counter);
+#ifdef SvWEAKREF
+      }
+#endif
+      hv_delete(seen, addr, (U32) len, 0);
       hv_delete(parents, addr, (U32) len, 0);
     }
 
   } else {
 
-    // Not a reference
+    /* Not a reference */
     switch (SvTYPE(sv)) {
 
-      case SVt_PVAV: { // Array
+      case SVt_PVAV: { /* Array */
         dsWARN("Array");
         for(i = 0; i <= av_len((AV*) sv); i++) {
 #if dsDEBUG
@@ -348,13 +381,13 @@ SV* _circular_off(SV *sv, HV *parents, SV *counter) {
           warn(errmsg);
 #endif
           AValue = av_fetch((AV*) sv, i, 0);
-          _circular_off(*AValue, parents, counter);
+          _circular_off(*AValue, parents, seen, counter);
           if (SvTYPE(sv) != SVt_PVAV)
-            croak("Unknown error after weakening a reference in array"); // In some circumstances, weakening a reference screw things up
+            croak("Unknown error after weakening a reference in array"); /* In some circumstances, weakening a reference screw things up */
         }
         break;
       }
-      case SVt_PVHV: { // Hash
+      case SVt_PVHV: { /* Hash */
         dsWARN("Hash");
         myHash = (HV*) sv;
         hv_iterinit(myHash);
@@ -365,9 +398,9 @@ SV* _circular_off(SV *sv, HV *parents, SV *counter) {
           sprintf(errmsg, "NEXT KEY is %s\n", HKey);
           warn(errmsg);
 #endif
-          _circular_off(HeVAL(HEntry), parents, counter);
+          _circular_off(HeVAL(HEntry), parents, seen, counter);
           if (SvTYPE(sv) != SVt_PVHV)
-            croak("Unknown error after weakening a reference in hash"); // In some circumstances, weakening a reference screw things up
+            croak("Unknown error after weakening a reference in hash"); /* In some circumstances, weakening a reference screw things up */
         }
         break;
       }
@@ -489,10 +522,10 @@ testvar:
 }
 #endif
 
-//
-// has_seen
-// Returns true if ref already seen
-//
+/*
+ has_seen
+ Returns true if ref already seen
+*/
 int has_seen(SV* sv, HV* seen) {
   char addr[PTRLEN];
   sprintf(addr, "%p", SvRV(sv));
@@ -559,7 +592,7 @@ has_circular_ref_xs(sv)
     SV* sv
 PROTOTYPE: $
 CODE:
-    RETVAL = _has_circular_ref(sv, newHV());
+    RETVAL = _has_circular_ref(sv, newHV(), newHV());
 OUTPUT:
     RETVAL
 
@@ -575,7 +608,7 @@ CODE:
 #else
     croak("This version of perl doesn't support weak references");
 #endif
-    RETVAL = _circular_off(sv, newHV(), newSViv(0));
+    RETVAL = _circular_off(sv, newHV(), newHV(), newSViv(0));
 OUTPUT:
     RETVAL
     

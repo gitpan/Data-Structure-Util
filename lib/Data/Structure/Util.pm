@@ -10,7 +10,7 @@ require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 BEGIN {
   if ($] < 5.008) {
     @EXPORT_OK = qw(unbless get_blessed has_circular_ref circular_off);
