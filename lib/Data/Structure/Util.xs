@@ -7,8 +7,8 @@
 #else
 #  define dsWARN(msg)
 #endif
-
-
+#define PTRLEN 40
+  
 /*
 
 Upgrade strings to utf8
@@ -120,7 +120,7 @@ redo_has_utf8:
 
 /*
 
-unbless a any object within the data structure
+unbless any object within the data structure
 
 */
 SV* _unbless(SV* sv, HV* seen) {
@@ -190,7 +190,7 @@ AV* _get_blessed(SV* sv, HV* seen, AV* objects) {
     }
   
   } else {
-    
+
     switch (SvTYPE(sv)) {
       case SVt_PVAV: {
         for(i = 0; i <= av_len((AV*) sv); i++) {
@@ -229,13 +229,15 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
   SV** AValue;
   HV* myHash;
   HE* HEntry;
+#if dsDEBUG
+  char errmsg[100];
+#endif
 
   if (SvROK(sv)) { // Reference
 
-    char addr[40];
+    char addr[PTRLEN];
     sprintf(addr, "%p", SvRV(sv));
     len = strlen(addr);
-
 
     if (hv_exists(parents, addr, len)) {
 #ifdef SvWEAKREF
@@ -251,7 +253,7 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
       }
 #endif
     }
-    
+
     hv_store(parents, addr, len,  NULL, 0);
     ret = _has_circular_ref(SvRV(sv), parents);
     hv_delete(parents, addr, (U32) len, 0);
@@ -264,7 +266,10 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
     case SVt_PVAV: { // Array
       dsWARN("Array");
       for(i = 0; i <= av_len((AV*) sv); i++) {
-        dsWARN("next elem");
+#if dsDEBUG
+        sprintf(errmsg, "next elem %i\n", i);
+        warn(errmsg);
+#endif
         AValue = av_fetch((AV*) sv, i, 0);
         found = _has_circular_ref(*AValue, parents);
         if (SvOK(found))
@@ -277,7 +282,12 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
       myHash = (HV*) sv;
       hv_iterinit(myHash);
       while( HEntry = hv_iternext(myHash) ) {
-        dsWARN("next key");
+#if dsDEBUG
+          STRLEN len2;
+          char* HKey = HePV(HEntry, len2);
+          sprintf(errmsg, "NEXT KEY is %s\n", HKey);
+          warn(errmsg);
+#endif
         found = _has_circular_ref(HeVAL(HEntry), parents);
         if (SvOK(found))
           return found;
@@ -286,6 +296,84 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
     }
   }
   return &PL_sv_undef;
+}
+
+
+/*
+
+Weaken any circular reference found
+
+*/
+SV* _circular_off(SV *sv, HV *parents, SV *counter) {
+
+  U32 len;
+  I32 i;
+  SV** AValue;
+  HV* myHash;
+  HE* HEntry;
+  char addr[PTRLEN];
+#if dsDEBUG
+  char errmsg[100];
+#endif
+
+  if (SvROK(sv)) { // Reference
+
+    sprintf(addr, "%p", SvRV(sv));
+    len = strlen(addr);
+
+    if (hv_exists(parents, addr, len)) {
+      if (SvWEAKREF(sv)) {
+        dsWARN("found a weak reference");
+      } else {
+        dsWARN("found a circular reference!!!");
+        sv_rvweaken(sv);
+        sv_inc(counter);
+      }
+    } else {
+      hv_store(parents, addr, len,  NULL, 0);
+      _circular_off(SvRV(sv), parents, counter);
+      hv_delete(parents, addr, (U32) len, 0);
+    }
+
+  } else {
+
+    // Not a reference
+    switch (SvTYPE(sv)) {
+
+      case SVt_PVAV: { // Array
+        dsWARN("Array");
+        for(i = 0; i <= av_len((AV*) sv); i++) {
+#if dsDEBUG
+          sprintf(errmsg, "next elem %i\n", i);
+          warn(errmsg);
+#endif
+          AValue = av_fetch((AV*) sv, i, 0);
+          _circular_off(*AValue, parents, counter);
+          if (SvTYPE(sv) != SVt_PVAV)
+            croak("Unknown error after weakening a reference in array"); // In some circumstances, weakening a reference screw things up
+        }
+        break;
+      }
+      case SVt_PVHV: { // Hash
+        dsWARN("Hash");
+        myHash = (HV*) sv;
+        hv_iterinit(myHash);
+        while( HEntry = hv_iternext(myHash) ) {
+#if dsDEBUG
+          STRLEN len2;
+          char* HKey = HePV(HEntry, len2);
+          sprintf(errmsg, "NEXT KEY is %s\n", HKey);
+          warn(errmsg);
+#endif
+          _circular_off(HeVAL(HEntry), parents, counter);
+          if (SvTYPE(sv) != SVt_PVHV)
+            croak("Unknown error after weakening a reference in hash"); // In some circumstances, weakening a reference screw things up
+        }
+        break;
+      }
+    }
+  }
+  return counter;
 }
 
 
@@ -406,7 +494,7 @@ testvar:
 // Returns true if ref already seen
 //
 int has_seen(SV* sv, HV* seen) {
-  char addr[40];
+  char addr[PTRLEN];
   sprintf(addr, "%p", SvRV(sv));
   if (hv_exists(seen, addr, (U32) strlen(addr))) {
     dsWARN("already seen");
@@ -476,6 +564,22 @@ OUTPUT:
     RETVAL
 
 
+MODULE = Data::Structure::Util     PACKAGE = Data::Structure::Util
+
+SV*
+circular_off_xs(sv)
+    SV* sv
+PROTOTYPE: $
+CODE:
+#ifdef SvWEAKREF
+#else
+    croak("This version of perl doesn't support weak references");
+#endif
+    RETVAL = _circular_off(sv, newHV(), newSViv(0));
+OUTPUT:
+    RETVAL
+    
+    
 MODULE = Data::Structure::Util     PACKAGE = Data::Structure::Util
 
 AV*

@@ -10,14 +10,13 @@ require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
-$VERSION = '0.04';
-@EXPORT = qw( );
+$VERSION = '0.05';
 BEGIN {
   if ($] < 5.008) {
-    @EXPORT_OK = qw(unbless get_blessed has_circular_ref);
+    @EXPORT_OK = qw(unbless get_blessed has_circular_ref circular_off);
   }
   else {
-    @EXPORT_OK = qw(has_utf8 utf8_off utf8_on unbless get_blessed has_circular_ref);
+    @EXPORT_OK = qw(has_utf8 utf8_off utf8_on unbless get_blessed has_circular_ref circular_off);
   }
 }
 
@@ -45,8 +44,13 @@ sub get_blessed {
 }
 
 sub has_circular_ref {
-  $_[0] or return 0;
+  $_[0] or return $_[0];
   has_circular_ref_xs($_[0]);
+}
+
+sub circular_off {
+  $_[0] or return $_[0];
+  circular_off_xs($_[0]);
 }
 
 1;
@@ -78,6 +82,7 @@ Data::Structure::Util - Change nature of data within a structure
 =head1 DESCRIPTION
 
 C<Data::Structure::Util> is a toolbox to manipulate data inside a data structure.
+It can parse an entire tree and perform the operation requested on each appropriate element.
 It can transform to utf8 any string within a data structure. I can attempts to
 transform any utf8 string back to default encoding either.
 It can remove the blessing on any reference. It can collect all the objects
@@ -91,7 +96,7 @@ It is written in C for decent speed.
 
 =item has_utf8($var)
 
-Returns $var if there is a utf8 (as noted by perl) string anywhere within $var.
+Returns $var if there is an utf8 (as noted by perl) string anywhere within $var.
 Returns undef if no utf8 string has been found.
 
 =item utf8_off($var)
@@ -125,6 +130,11 @@ Example:
     warn "Got a circular reference " . Dumper($circular_ref) . "You can use 'weaken' from Scalar::Util module to break it";
   }
 
+=item circular_off($ref)
+
+Weaken any reference part of a circular reference in an attempt to break it.
+Returns the number of references which has been newly weaken.
+
 =back
 
 =head1 SEE ALSO
@@ -132,6 +142,13 @@ Example:
 C<Scalar::Util>, C<Devel::Leak>, C<Devel::LeakTrace>
 
 See the excellent article http://www.perl.com/pub/a/2002/08/07/proxyobject.html from Matt Sergeant for more info on circular references
+
+=head1 BUGS
+
+Using perl 5.8.0, there is a pathological case where circular_off will fail, I don't know why yet:
+  my $obj8 = [];
+  $obj8->[0] = \$obj8;
+  circular_off($obj8); # Will throw an error
 
 =head1 THANKS TO
 
