@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 
-use lib qw(. blib lib);
+use blib;
+use strict;
+use warnings;
 use Data::Structure::Util qw(has_utf8 utf8_off utf8_on unbless get_blessed has_circular_ref); 
 use Data::Dumper;
 use Clone qw(clone);
@@ -39,7 +41,7 @@ else {
   ok( utf8_on($hash), "Have encoded utf8");
 }
 
-my $string = $hash->{key1};
+$string = $hash->{key1};
 my $string2 = $hash2->{key1};
 ok( utf8_on($string) eq $string, "Got string back");
 ok( utf8_on($string2) eq $string2, "Got string back");

@@ -1,5 +1,9 @@
 Revision history for Perl module Data::Structure::Util
 
+0.04
+  - Circular reference detection is smarter in presence of weak references
+  - Removed warnings from tests
+
 0.03 Tue Nov 05 23:25:00 2003
   - Added support for weaken references in has_circular_ref
   - Added prototyping of XS functions

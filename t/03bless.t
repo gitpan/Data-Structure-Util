@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 
 use blib;
+use strict;
+use warnings;
 use Data::Structure::Util qw(has_utf8 utf8_off utf8_on unbless get_blessed has_circular_ref); 
 use Data::Dumper;
 

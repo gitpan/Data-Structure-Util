@@ -220,7 +220,7 @@ AV* _get_blessed(SV* sv, HV* seen, AV* objects) {
 Detects if there is a circular reference
 
 */
-SV* _has_circular_ref(SV* sv, HV* seen, HV* parents) {
+SV* _has_circular_ref(SV* sv, HV* parents) {
 
   SV* ret;
   SV* found;
@@ -235,24 +235,25 @@ SV* _has_circular_ref(SV* sv, HV* seen, HV* parents) {
     char addr[40];
     sprintf(addr, "%p", SvRV(sv));
     len = strlen(addr);
-    
+
+
+    if (hv_exists(parents, addr, len)) {
 #ifdef SvWEAKREF
-    if (! SvWEAKREF(sv)) {
+      if (SvWEAKREF(sv)) {
+        dsWARN("found a weak reference");
+        return &PL_sv_undef;
+      } else {
 #endif
-      if (hv_exists(parents, addr, len)) {
         dsWARN("found a circular reference!!!");
         SvREFCNT_inc(sv);
         return sv;
-      }
-      hv_store(parents, addr, len,  NULL, 0);
 #ifdef SvWEAKREF
-    }
+      }
 #endif
+    }
     
-    if (has_seen(sv, seen))
-      return &PL_sv_undef;
-    
-    ret = _has_circular_ref(SvRV(sv), seen, parents);
+    hv_store(parents, addr, len,  NULL, 0);
+    ret = _has_circular_ref(SvRV(sv), parents);
     hv_delete(parents, addr, (U32) len, 0);
     return ret;
   }
@@ -265,7 +266,7 @@ SV* _has_circular_ref(SV* sv, HV* seen, HV* parents) {
       for(i = 0; i <= av_len((AV*) sv); i++) {
         dsWARN("next elem");
         AValue = av_fetch((AV*) sv, i, 0);
-        found = _has_circular_ref(*AValue, seen, parents);
+        found = _has_circular_ref(*AValue, parents);
         if (SvOK(found))
           return found;
       }
@@ -277,7 +278,7 @@ SV* _has_circular_ref(SV* sv, HV* seen, HV* parents) {
       hv_iterinit(myHash);
       while( HEntry = hv_iternext(myHash) ) {
         dsWARN("next key");
-        found = _has_circular_ref(HeVAL(HEntry), seen, parents);
+        found = _has_circular_ref(HeVAL(HEntry), parents);
         if (SvOK(found))
           return found;
       }
@@ -470,7 +471,7 @@ has_circular_ref_xs(sv)
     SV* sv
 PROTOTYPE: $
 CODE:
-    RETVAL = _has_circular_ref(sv, newHV(), newHV());
+    RETVAL = _has_circular_ref(sv, newHV());
 OUTPUT:
     RETVAL
 

@@ -10,7 +10,7 @@ require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 @EXPORT = qw( );
 BEGIN {
   if ($] < 5.008) {

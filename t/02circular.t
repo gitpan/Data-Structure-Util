@@ -1,12 +1,14 @@
 #!/usr/bin/perl
 
-use lib qw( blib lib );
+use strict;
+use warnings;
+use blib;
 use Data::Structure::Util qw(has_utf8 utf8_off utf8_on unbless get_blessed has_circular_ref); 
 use Data::Dumper;
 
 
+our $WEAKEN;
 BEGIN {
-  our $WEAKEN;
   eval q{ use Scalar::Util qw(weaken isweak) };
   if ($@) {
     eval q{ use Test::Simple tests => 13 };
@@ -61,7 +63,7 @@ $obj5->{key6} = $obj5->{key5}->{key53}->[2];
 $obj5->{key5}->{key55} = $obj5->{key5}->{key53}->[2];
 
 my $obj6 = { key1 => undef };
-my $obj = $obj6;
+$obj = $obj6;
 my $V2 = [1, undef, \5, sub {} ];
 foreach (1 .. 50) {
   $obj->{key2} = {};
