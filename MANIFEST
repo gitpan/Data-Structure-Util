@@ -1,0 +1,17 @@
+Build.PL
+CHANGES
+LICENSE
+MANIFEST			This list of files
+Makefile.PL
+META.yml
+NINJA
+README
+lib/Data/Structure/Util.pm
+lib/Data/Structure/Util.xs
+t/00pod.t
+t/01compile.t
+t/02circular.t
+t/03bless.t
+t/04utf8.t
+
+SIGNATURE    Added here by Module::Build
