@@ -31,6 +31,9 @@ bool _utf8_set(SV* sv, HV* seen, int onoff) {
   HE* HEntry;
   SV** AValue;
 
+  /* if this is a plain reference then simply
+     move down to what the reference points at */
+
 redo_utf8:
   if (SvROK(sv)) {
     if (has_seen(sv, seen))
@@ -41,17 +44,8 @@ redo_utf8:
 
   switch (SvTYPE(sv)) {
 
-    case SVt_PV:
-    case SVt_PVNV: {
-      dsWARN("string (PV)\n");
-      dsWARN(SvUTF8(sv) ? "UTF8 is on\n" : "UTF8 is off\n");
-      if (onoff && ! SvUTF8(sv)) {
-        sv_utf8_upgrade(sv);
-      } else if (! onoff && SvUTF8(sv)) {
-        sv_utf8_downgrade(sv, 0);
-      }
-      break;
-    }
+    /* recursivly look inside a hash and arrays */
+
     case SVt_PVAV: {
       dsWARN("Found array\n");
       for(i = 0; i <= av_len((AV*) sv); i++) {
@@ -69,6 +63,30 @@ redo_utf8:
       }
       break;
     }
+
+    /* non recursive case, check if it's got a string
+       value or not. */
+
+    default: {
+      if (SvPOK(sv))
+      {
+        /* it's a string! do the transformation if we need to */
+
+	dsWARN("string (PV)\n");
+        dsWARN(SvUTF8(sv) ? "UTF8 is on\n" : "UTF8 is off\n");
+        if (onoff && ! SvUTF8(sv)) {
+          sv_utf8_upgrade(sv);
+        } else if (! onoff && SvUTF8(sv)) {
+          sv_utf8_downgrade(sv, 0);
+        }
+      } else {
+        /* unknown type.  Could be a SvIV or SvNV, but they don't
+           have magic so that's okay.  Could also be one of the
+           types we don't deal with (a coderef, a typeglob) */
+
+        dsWARN("unknown type\n");
+      }
+    }
   }
   return TRUE;
 }
@@ -85,6 +103,9 @@ bool _utf8_flag_set(SV* sv, HV* seen, int onoff) {
   HE* HEntry;
   SV** AValue;
 
+  /* if this is a plain reference then simply
+     move down to what the reference points at */
+
 redo_flag_utf8:
   if (SvROK(sv)) {
     if (has_seen(sv, seen))
@@ -95,17 +116,8 @@ redo_flag_utf8:
 
   switch (SvTYPE(sv)) {
 
-    case SVt_PV:
-    case SVt_PVNV: {
-      dsWARN("string (PV)\n");
-      dsWARN(SvUTF8(sv) ? "UTF8 is on\n" : "UTF8 is off\n");
-      if (onoff && ! SvUTF8(sv)) {
-        SvUTF8_on(sv);
-      } else if (! onoff && SvUTF8(sv)) {
-        SvUTF8_off(sv);
-      }
-      break;
-    }
+    /* recursivly look inside a hash and arrays */
+
     case SVt_PVAV: {
       dsWARN("Found array\n");
       for(i = 0; i <= av_len((AV*) sv); i++) {
@@ -122,6 +134,31 @@ redo_flag_utf8:
         _utf8_flag_set(HeVAL(HEntry), seen, onoff);
       }
       break;
+    }
+
+    /* non recursive case, check if it's got a string
+       value or not. */
+
+    default: {
+
+      /* it's a string! do the transformation if we need to */
+
+      if (SvPOK(sv)) {
+        dsWARN("string (PV)\n");
+        dsWARN(SvUTF8(sv) ? "UTF8 is on\n" : "UTF8 is off\n");
+        if (onoff && ! SvUTF8(sv)) {
+          SvUTF8_on(sv);
+        } else if (! onoff && SvUTF8(sv)) {
+          SvUTF8_off(sv);
+        }
+      } else {
+
+        /* unknown type.  Could be a SvIV or SvNV, but they don't
+           have magic so that's okay.  Could also be one of the
+           types we don't deal with (a codref, a typeglob) */
+
+        dsWARN("unknown type\n");
+      }
     }
   }
   return TRUE;

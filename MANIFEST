@@ -1,6 +1,5 @@
 Build.PL
 CHANGES
-LICENSE
 MANIFEST			This list of files
 META.yml
 Makefile.PL
@@ -17,3 +16,5 @@ t/03bless.t
 t/04utf8.t
 t/05refs.t
 t/06signature.t
+t/07utf8m.t
+t/08globs.t

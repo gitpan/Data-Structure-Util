@@ -1,11 +1,17 @@
 Revision history for Perl module Data::Structure::Util
 
+0.11 Fri Sep 10 11:00:00 2004
+
+  - Fixed t/00pod.t for those who don't have Test::POD installed - Thanks Jeremy
+  - Major doc updates
+  - fixed some utf8 bugs with magic scalars (length caching for utf8) - Thanks Mark
+
 0.10 Sat Jun 26 19:25:00 2004
-  - Updated tests to be compatible vith perl 5.6
+  - Updated tests to be compatible vith perl 5.6 - Thanks Jeremy
   - Added _utf8_on() and _utf8_off()
 
 0.09 Fri Mar 26 15:10:00 2004
-  - Updated tests to pass on perls without unicode - tom
+  - Updated tests to pass on perls without unicode - Tom
   - Updated doc
 
 0.08 Mon Jan 20 12:00:00 2004
@@ -16,7 +22,7 @@ Revision history for Perl module Data::Structure::Util
   - Updated doc
 
 0.06 Tue Dec 30 10:27:00 2003
-  - Changed C++ style comments to C style comments - Thanks leon
+  - Changed C++ style comments to C style comments - Thanks Leon
   - Fixed bug in has_circular_ref() and circular_off() where there was a weak ref:
     in some cases, a circular ref could be wrongly reported.
 
