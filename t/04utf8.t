@@ -79,10 +79,10 @@ sub test_utf8 {
   
   eval q{ use Encode };
   if ($@) {
-    warn "Encode not installed - $@ - will try XML::Simple\n";
+    warn "Encode not installed - will try XML::Simple\n";
     eval q{ use XML::Simple qw(XMLin XMLout) };
     if ($@) {
-      warn "XML::Simple not installed - $@\n";
+      warn "XML::Simple not installed\n";
       return;
     }
     my $xml = XMLout($hash, keyattr => [], noattr => 1, suppressempty => undef, xmldecl => '<?xml version="1.0" encoding="ISO-8859-1"?>');

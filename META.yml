@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: Data-Structure-Util
-version: 0.02
+version: 0.03
 license: perl
 distribution_type: module
 requires:
@@ -8,6 +8,7 @@ requires:
 recommends: {}
 build_requires:
   Clone: 0
+  Scalar::Util: 1.01
   Test::More: 0
   Test::Pod: 0
   Test::Simple: 0
@@ -16,5 +17,5 @@ dynamic_config: 0
 provides:
   Data::Structure::Util:
     file: lib/Data/Structure/Util.pm
-    version: 0.02
+    version: 0.03
 generated_by: Module::Build version 0.21

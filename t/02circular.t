@@ -1,13 +1,23 @@
 #!/usr/bin/perl
 
-use blib;
+use lib qw( blib lib );
 use Data::Structure::Util qw(has_utf8 utf8_off utf8_on unbless get_blessed has_circular_ref); 
 use Data::Dumper;
 
-use Test::Simple tests => 13;
+
+BEGIN {
+  our $WEAKEN;
+  eval q{ use Scalar::Util qw(weaken isweak) };
+  if ($@) {
+    eval q{ use Test::Simple tests => 13 };
+  }
+  else {
+    eval q{ use Test::Simple tests => 16 };
+    $WEAKEN = 1;
+  }
+}
 
 ok(1,"we loaded fine...");
-
 
 my $obj = bless {
                   key1 => [1, 2, 3, bless {} => 'Tagada'],
@@ -77,4 +87,24 @@ ok($obj6 == has_circular_ref($obj6), "Match reference");
 ok(! has_circular_ref(), "No circular reference");
 ok(! has_circular_ref( [] ), "No circular reference");
 ok(has_circular_ref( [ \\\\\\\\\\\\\\\\\\\\\\\\\\\\\$ref ] ), "Has circular reference");
+
+
+if ($WEAKEN) {
+  my $obj7 =  { key1 => {} };
+  $obj7->{key1}->{key11} = $obj7->{key1};
+  ok(has_circular_ref($obj7), "Got a circular reference");
+  eval { weaken($obj7->{key1}->{key11}) };
+  if ($@) {
+    warn "Scalar::Util could not export weaken - skipping tests\n";
+    ok(1);
+    ok(1);
+  }
+  else {
+    ok(isweak($obj7->{key1}->{key11}), "has weaken reference");
+    ok(! has_circular_ref($obj7), "No more circular reference");
+  } 
+}
+else {
+  warn "Scalar::Util not installed, some tests skipped\n";
+}
 

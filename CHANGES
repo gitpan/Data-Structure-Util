@@ -1,5 +1,10 @@
 Revision history for Perl module Data::Structure::Util
 
+0.03 Tue Nov 05 23:25:00 2003
+  - Added support for weaken references in has_circular_ref
+  - Added prototyping of XS functions
+  - Updated documentation
+
 0.02 Tue Nov 04 22:05:00 2003
   - Fixed compilations issues with old versions of gcc (thanks Leon)
   - has_utf8, utf8_on and utf8_off now return the first parameter

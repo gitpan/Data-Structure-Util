@@ -4,14 +4,13 @@ use strict;
 use warnings::register;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 
-require Carp;
 require Exporter;
 require DynaLoader;
 require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 @EXPORT = qw( );
 BEGIN {
   if ($] < 5.008) {
@@ -25,19 +24,19 @@ BEGIN {
 bootstrap Data::Structure::Util $VERSION;
 
 sub has_utf8 {
-  has_utf8_xs(@_) ? $_[0] : undef;
+  has_utf8_xs($_[0]) ? $_[0] : undef;
 }
 
 sub utf8_off {
-  utf8_off_xs(@_) ? $_[0] : undef;
+  utf8_off_xs($_[0]) ? $_[0] : undef;
 }
 
 sub utf8_on {
-  utf8_on_xs(@_) ? $_[0] : undef;
+  utf8_on_xs($_[0]) ? $_[0] : undef;
 }
 
 sub unbless {
-  unbless_xs(@_);
+  unbless_xs($_[0]);
 }
 
 sub get_blessed {
@@ -47,12 +46,13 @@ sub get_blessed {
 
 sub has_circular_ref {
   $_[0] or return 0;
-  has_circular_ref_xs(@_);
+  has_circular_ref_xs($_[0]);
 }
 
 1;
 
 __END__
+
 
 =head1 NAME
 
@@ -89,17 +89,20 @@ It is written in C for decent speed.
 
 =over 4
 
-=item has_utf8($ref)
+=item has_utf8($var)
 
-Returns true if there is a utf8 (as noted by perl) string within the data structure referenced by $ref
+Returns $var if there is a utf8 (as noted by perl) string anywhere within $var.
+Returns undef if no utf8 string has been found.
 
-=item utf8_off($ref)
+=item utf8_off($var)
 
-Attempts to decode from utf8 any string within the data structure referenced by $ref
+Attempts to decode from utf8 any string within $var. Returns $var.
+If successful, the resulting string will not not be flagged as utf8.
 
-=item utf8_on($ref)
+=item utf8_on($var)
 
-Encode to utf8 any string within the data structure referenced by $ref
+Encode to utf8 any string within $var. Returns $var.
+The resulting string will flagged as utf8.
 
 =item unbless($ref)
 
@@ -113,10 +116,13 @@ so the top most objects should be the last elements of the array.
 =item has_circular_ref($ref)
 
 If a circular reference is detected, it returns the reference to an element composing the circuit.
-Returns false if no circular reference is detected. Example:
+Returns false if no circular reference is detected.
+If the version of perl enables weaken references, these are skipped and are not reported as part of a circular reference.
+
+Example:
 
   if ($circular_ref = has_circular_ref($ref)) {
-    warn "Got a circular reference, you can use 'weaken' from Scalar::Util module to break it";
+    warn "Got a circular reference " . Dumper($circular_ref) . "You can use 'weaken' from Scalar::Util module to break it";
   }
 
 =back
@@ -124,6 +130,8 @@ Returns false if no circular reference is detected. Example:
 =head1 SEE ALSO
 
 C<Scalar::Util>, C<Devel::Leak>, C<Devel::LeakTrace>
+
+See the excellent article http://www.perl.com/pub/a/2002/08/07/proxyobject.html from Matt Sergeant for more info on circular references
 
 =head1 THANKS TO
 

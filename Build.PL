@@ -13,8 +13,9 @@ Module::Build->new
                         Test::Pod    => 0,
                         Test::Simple => 0,
                         Test::More   => 0,
-                        Clone        => 0,
+                        Clone       => 0,
+                        Scalar::Util => 1.01,
                       },
       dynamic_config => 0,
-      sign => 1,
+      sign => 0,
     )->create_build_script;
