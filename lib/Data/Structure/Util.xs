@@ -235,7 +235,6 @@ AV* _get_refs(SV* sv, HV* seen, AV* objects) {
   SV** AValue;
   HV* myHash;
   HE* HEntry;
-  
   if (SvROK(sv)) {
 
     if (has_seen(sv, seen))
@@ -264,7 +263,6 @@ AV* _get_refs(SV* sv, HV* seen, AV* objects) {
       }
     }
   }
-  
   return objects;
 }
 
@@ -652,7 +650,7 @@ utf8_off_xs(sv)
     SV* sv
 PROTOTYPE: $
 CODE:
-    _utf8_set(sv, newHV(), 0);
+    _utf8_set(sv, (HV*) sv_2mortal((SV*) newHV()), 0);
 
 
 MODULE = Data::Structure::Util     PACKAGE = Data::Structure::Util
@@ -662,7 +660,7 @@ utf8_on_xs(sv)
     SV* sv
 PROTOTYPE: $
 CODE:
-    RETVAL = _utf8_set(sv, newHV(), 1);
+    RETVAL = _utf8_set(sv, (HV*) sv_2mortal((SV*) newHV()), 1);
 OUTPUT:
     RETVAL
 
@@ -674,7 +672,7 @@ has_utf8_xs(sv)
     SV* sv
 PROTOTYPE: $
 CODE:
-    RETVAL = _has_utf8(sv, newHV());
+    RETVAL = _has_utf8(sv, (HV*) sv_2mortal((SV*) newHV()));
 OUTPUT:
     RETVAL
 
@@ -686,7 +684,7 @@ unbless_xs(sv)
     SV* sv
 PROTOTYPE: $
 CODE:
-    _unbless(sv, newHV());
+    _unbless(sv, (HV*) sv_2mortal((SV*) newHV()));
 
 
 MODULE = Data::Structure::Util     PACKAGE = Data::Structure::Util
@@ -696,7 +694,7 @@ has_circular_ref_xs(sv)
     SV* sv
 PROTOTYPE: $
 CODE:
-    RETVAL = _has_circular_ref(sv, newHV(), newHV());
+    RETVAL = _has_circular_ref(sv, (HV*) sv_2mortal((SV*) newHV()), (HV*) sv_2mortal((SV*) newHV()));
 OUTPUT:
     RETVAL
 
@@ -712,7 +710,7 @@ CODE:
 #else
     croak("This version of perl doesn't support weak references");
 #endif
-    RETVAL = _circular_off(sv, newHV(), newHV(), newSViv(0));
+    RETVAL = _circular_off(sv, (HV*) sv_2mortal((SV*) newHV()), (HV*) sv_2mortal((SV*) newHV()), newSViv(0));
 OUTPUT:
     RETVAL
     
@@ -724,7 +722,7 @@ get_blessed_xs(sv)
     SV* sv
 PROTOTYPE: $
 CODE:
-    RETVAL = _get_blessed(sv, newHV(), newAV());
+    RETVAL = _get_blessed(sv, (HV*) sv_2mortal((SV*) newHV()), (AV*) sv_2mortal((SV*) newAV()));
 OUTPUT:
     RETVAL
 
@@ -736,7 +734,7 @@ get_refs_xs(sv)
     SV* sv
 PROTOTYPE: $
 CODE:
-    RETVAL = _get_refs(sv, newHV(), newAV());
+    RETVAL = _get_refs(sv, (HV*) sv_2mortal((SV*) newHV()), (AV*) sv_2mortal((SV*) newAV()));
 OUTPUT:
     RETVAL
 
@@ -748,6 +746,6 @@ signature_xs(sv)
     SV* sv
 PROTOTYPE: $
 CODE:
-    RETVAL = _signature(sv, newHV(), newAV());
+    RETVAL = _signature(sv, (HV*) sv_2mortal((SV*) newHV()), (AV*) sv_2mortal((SV*) newAV()));
 OUTPUT:
     RETVAL

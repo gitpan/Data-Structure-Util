@@ -12,7 +12,7 @@ require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 BEGIN {
   if ($] < 5.008) {
     @EXPORT_OK = qw(unbless get_blessed get_refs has_circular_ref circular_off signature);
@@ -185,7 +185,8 @@ See the excellent article http://www.perl.com/pub/a/2002/08/07/proxyobject.html 
   
 =head1 THANKS TO
 
-James Duncan and Arthur Bergman who provided me with help and a name for this module
+James Duncan and Arthur Bergman who provided me with help and a name for this module.
+Richard Clamp has provided invaluable help to debug this module.
 
 =head1 AUTHOR
 

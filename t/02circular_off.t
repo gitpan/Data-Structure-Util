@@ -74,8 +74,11 @@ foreach (1 .. 50) {
 }
 
 ok(! has_circular_ref($thing), "Not a circular ref");
+{
 is(circular_off($thing), 0, "No circular ref broken");
+}
 
+print "foo\n";
 my $ref = has_circular_ref($obj);
 ok($ref, "Got a circular reference");
 is(circular_off($obj), 1, "Weaken circular references");
