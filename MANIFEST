@@ -13,5 +13,3 @@ t/01compile.t
 t/02circular.t
 t/03bless.t
 t/04utf8.t
-
-SIGNATURE    Added here by Module::Build

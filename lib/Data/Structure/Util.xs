@@ -3,9 +3,9 @@
 #include "XSUB.h"
 #define dsDEBUG 0
 #if dsDEBUG
-#  define dsWARN(msg, ...)  warn(msg)
+#  define dsWARN(msg)  warn(msg)
 #else
-#  define dsWARN(msg, ...)
+#  define dsWARN(msg)
 #endif
 
 
@@ -15,7 +15,11 @@ Upgrade strings to utf8
 
 */
 bool _utf8_set(SV* sv, HV* seen, int onoff) {
-
+  I32 i;
+  HV* myHash;
+  HE* HEntry;
+  SV** AValue;
+  
 redo_utf8:
   if (SvROK(sv)) {
     if (has_seen(sv, seen))
@@ -39,17 +43,15 @@ redo_utf8:
     }
     case SVt_PVAV: {
       dsWARN("Found array\n");
-      I32 i;
       for(i = 0; i <= av_len((AV*) sv); i++) {
-        SV** AValue = av_fetch((AV*) sv, i, 0);
+        AValue = av_fetch((AV*) sv, i, 0);
         _utf8_set(*AValue, seen, onoff);
       }
       break;
     }
     case SVt_PVHV: {
       dsWARN("Found hash\n");
-      HV* myHash = (HV*) sv;
-      HE* HEntry;
+      myHash = (HV*) sv;
       hv_iterinit(myHash);
       while( HEntry = hv_iternext(myHash) ) {
         _utf8_set(HeVAL(HEntry), seen, onoff);
@@ -67,6 +69,10 @@ Returns true if sv contains a utf8 string
 
 */
 bool _has_utf8(SV* sv, HV* seen) {
+  I32 i;
+  SV** AValue;
+  HV* myHash;
+  HE* HEntry;
 
 redo_has_utf8:
   if (SvROK(sv)) {
@@ -90,9 +96,8 @@ redo_has_utf8:
     }
     case SVt_PVAV: {
       dsWARN("Found array\n");
-      I32 i;
       for(i = 0; i <= av_len((AV*) sv); i++) {
-        SV** AValue = av_fetch((AV*) sv, i, 0);
+        AValue = av_fetch((AV*) sv, i, 0);
         if (_has_utf8(*AValue, seen))
           return TRUE;
       }
@@ -100,8 +105,7 @@ redo_has_utf8:
     }
     case SVt_PVHV: {
       dsWARN("Found hash\n");
-      HV* myHash = (HV*) sv;
-      HE* HEntry;
+      myHash = (HV*) sv;
       hv_iterinit(myHash);
       while( HEntry = hv_iternext(myHash) ) {
         if (_has_utf8(HeVAL(HEntry), seen))
@@ -120,6 +124,10 @@ unbless a any object within the data structure
 
 */
 SV* _unbless(SV* sv, HV* seen) {
+  I32 i;
+  SV** AValue;
+  HV* myHash;
+  HE* HEntry;
 
 redo_unbless:
   if (SvROK(sv)) {
@@ -140,17 +148,15 @@ redo_unbless:
 
     case SVt_PVAV: {
       dsWARN("an array\n");
-      I32 i;
       for(i = 0; i <= av_len((AV*) sv); i++) {
-        SV** AValue = av_fetch((AV*) sv, i, 0);
+        AValue = av_fetch((AV*) sv, i, 0);
         _unbless(*AValue, seen);
       }
       break;
     }
     case SVt_PVHV: {
       dsWARN("a hash (PVHV)\n");
-      HV* myHash = (HV*) sv;
-      HE* HEntry;
+      myHash = (HV*) sv;
       hv_iterinit(myHash);
       while( HEntry = hv_iternext(myHash) ) {
         _unbless(HeVAL(HEntry), seen);
@@ -168,7 +174,11 @@ Returns objects within a data structure, deep first
 
 */
 AV* _get_blessed(SV* sv, HV* seen, AV* objects) {
-//redo_get_blessed:
+  I32 i;
+  SV** AValue;
+  HV* myHash;
+  HE* HEntry;
+  
   if (SvROK(sv)) {
 
     if (has_seen(sv, seen))
@@ -183,16 +193,14 @@ AV* _get_blessed(SV* sv, HV* seen, AV* objects) {
     
     switch (SvTYPE(sv)) {
       case SVt_PVAV: {
-        I32 i;
         for(i = 0; i <= av_len((AV*) sv); i++) {
-          SV** AValue = av_fetch((AV*) sv, i, 0);
+          AValue = av_fetch((AV*) sv, i, 0);
           _get_blessed(*AValue, seen, objects);
         }
         break;
       }
       case SVt_PVHV: {
-        HV* myHash = (HV*) sv;
-        HE* HEntry;
+        myHash = (HV*) sv;
         hv_iterinit(myHash);
         while( HEntry = hv_iternext(myHash) ) {
           _get_blessed(HeVAL(HEntry), seen, objects);
@@ -214,11 +222,19 @@ Detects if there is a circular reference
 */
 SV* _has_circular_ref(SV* sv, HV* parents) {
 
+  SV* ret;
+  SV* found;
+  U32 len;
+  I32 i;
+  SV** AValue;
+  HV* myHash;
+  HE* HEntry;
+  
   if (SvROK(sv)) { // Reference
 
     char addr[40];
     sprintf(addr, "%p", SvRV(sv));
-    U32 len = strlen(addr);
+    len = strlen(addr);
 
     if (hv_exists(parents, addr, len)) {
       dsWARN("found a circular reference!!!");
@@ -228,7 +244,7 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
     
     hv_store(parents, addr, len,  NULL, 0);
 
-    SV* ret = _has_circular_ref(SvRV(sv), parents);
+    ret = _has_circular_ref(SvRV(sv), parents);
     hv_delete(parents, addr, (U32) len, 0);
     return ret;
   }
@@ -238,11 +254,10 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
 
     case SVt_PVAV: { // Array
       dsWARN("Array");
-      I32 i;
       for(i = 0; i <= av_len((AV*) sv); i++) {
         dsWARN("next elem");
-        SV** AValue = av_fetch((AV*) sv, i, 0);
-        SV* found = _has_circular_ref(*AValue, parents);
+        AValue = av_fetch((AV*) sv, i, 0);
+        found = _has_circular_ref(*AValue, parents);
         if (SvOK(found))
           return found;
       }
@@ -250,12 +265,11 @@ SV* _has_circular_ref(SV* sv, HV* parents) {
     }
     case SVt_PVHV: { // Hash
       dsWARN("Hash");
-      HV* myHash = (HV*) sv;
-      HE* HEntry;
+      myHash = (HV*) sv;
       hv_iterinit(myHash);
       while( HEntry = hv_iternext(myHash) ) {
         dsWARN("next key");
-        SV* found = _has_circular_ref(HeVAL(HEntry), parents);
+        found = _has_circular_ref(HeVAL(HEntry), parents);
         if (SvOK(found))
           return found;
       }

@@ -5,7 +5,17 @@ use Data::Structure::Util qw(has_utf8 utf8_off utf8_on unbless get_blessed has_c
 use Data::Dumper;
 use Clone qw(clone);
 
-use Test::Simple tests => 13;
+BEGIN {
+  if ($] < 5.008) {
+    my $reason = "This version of perl ($]) doesn't have proper utf8 support, 5.8.0 or higher is needed";
+    eval qq{ use Test::More skip_all => "$reason" };
+    exit;
+  }
+  else {
+    eval q{ use Test::Simple tests => 18 };
+    die $@ if $@;
+  }
+}  
 
 ok(1,"we loaded fine...");
 
@@ -28,8 +38,17 @@ else {
   $hash2 = clone($hash);
   ok( utf8_on($hash), "Have encoded utf8");
 }
+
+my $string = $hash->{key1};
+my $string2 = $hash2->{key1};
+ok( utf8_on($string) eq $string, "Got string back");
+ok( utf8_on($string2) eq $string2, "Got string back");
+ok( utf8_off($string) eq $string, "Got string back");
+ok( utf8_off($string2) eq $string2, "Got string back");
+
 ok( ! has_utf8($hash), "Has not utf8");
 ok( has_utf8($hash2), "Has utf8");
+ok( has_utf8($hash2) eq $hash2, "Has utf8");
 
 ok( $hash2->{key1} eq $hash->{key1}, "Same string");
 ok( ! compare($hash2->{key1}, $hash->{key1}), "Different encoding");

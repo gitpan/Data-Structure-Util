@@ -11,23 +11,29 @@ require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
+$VERSION = '0.02';
 @EXPORT = qw( );
-@EXPORT_OK = qw(has_utf8 utf8_off utf8_on unbless get_blessed has_circular_ref);
-$VERSION = '0.01';
-
+BEGIN {
+  if ($] < 5.008) {
+    @EXPORT_OK = qw(unbless get_blessed has_circular_ref);
+  }
+  else {
+    @EXPORT_OK = qw(has_utf8 utf8_off utf8_on unbless get_blessed has_circular_ref);
+  }
+}
 
 bootstrap Data::Structure::Util $VERSION;
 
 sub has_utf8 {
-  has_utf8_xs(@_);
+  has_utf8_xs(@_) ? $_[0] : undef;
 }
 
 sub utf8_off {
-  utf8_off_xs(@_);
+  utf8_off_xs(@_) ? $_[0] : undef;
 }
 
 sub utf8_on {
-  utf8_on_xs(@_);
+  utf8_on_xs(@_) ? $_[0] : undef;
 }
 
 sub unbless {
