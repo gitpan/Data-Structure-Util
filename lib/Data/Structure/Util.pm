@@ -12,13 +12,13 @@ require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
-$VERSION = '0.09';
+$VERSION = '0.10';
 BEGIN {
   if ($] < 5.008) {
     @EXPORT_OK = qw(unbless get_blessed get_refs has_circular_ref circular_off signature);
   }
   else {
-    @EXPORT_OK = qw(has_utf8 utf8_off utf8_on unbless get_blessed get_refs has_circular_ref circular_off signature);
+    @EXPORT_OK = qw(has_utf8 utf8_off utf8_on _utf8_on _utf8_off unbless get_blessed get_refs has_circular_ref circular_off signature);
   }
 }
 
@@ -34,6 +34,14 @@ sub utf8_off {
 
 sub utf8_on {
   utf8_on_xs($_[0]) ? $_[0] : undef;
+}
+
+sub _utf8_off {
+  _utf8_off_xs($_[0]) ? $_[0] : undef;
+}
+
+sub _utf8_on {
+  _utf8_on_xs($_[0]) ? $_[0] : undef;
 }
 
 sub unbless {
@@ -77,7 +85,7 @@ Data::Structure::Util - Change nature of data within a structure
 =head1 SYNOPSIS
 
   use Data::Structure::Util qw(has_utf8 utf8_off utf8_on unbless get_blessed get_refs has_circular_ref circular_off signature);
-  
+
   $data = {
             key1 => 'hello',
             key2 => bless({}, 'Foo'),
@@ -108,7 +116,7 @@ It is written in C for decent speed.
 
 =item has_utf8($var)
 
-Returns $var if there is an utf8 (as noted by perl) string anywhere within $var.
+Returns $var if there is a utf8 (as noted by perl) string anywhere within $var.
 Returns undef if no utf8 string has been found.
 
 =item utf8_off($var)
@@ -120,6 +128,16 @@ If successful, the resulting string will not not be flagged as utf8.
 
 Encode to utf8 any string within $var. Returns $var.
 The resulting string will flagged as utf8.
+
+=item _utf8_off($var)
+
+Switch off the utf8 flag on any string within $var.
+This the same than _utf8_off of L<Encode> but applies to any string within $var.
+
+=item _utf8_on($var)
+
+Switch on the utf8 flag on any string within $var.
+This the same than _utf8_on of L<Encode> but applies to any string within $var.
 
 =item unbless($ref)
 
@@ -170,9 +188,11 @@ signature($ref1) and signature($ref2) will be different, even if they look the s
 
 =head1 SEE ALSO
 
-C<Scalar::Util>, C<Devel::Leak>, C<Devel::LeakTrace>
+L<Encode>, L<Scalar::Util>, L<Devel::Leak>, L<Devel::LeakTrace>
 
 See the excellent article http://www.perl.com/pub/a/2002/08/07/proxyobject.html from Matt Sergeant for more info on circular references
+
+The development version of this module and others can be found at http://opensource.fotango.com/cgi-bin/viewcvs.cgi/trunk/
 
 =head1 BUGS
 
@@ -182,19 +202,21 @@ See the excellent article http://www.perl.com/pub/a/2002/08/07/proxyobject.html 
   circular_off($obj8); # Will throw an error
 
   signature() is sensitive to the hash randomisation algorithm
-  
+
 =head1 THANKS TO
 
-James Duncan and Arthur Bergman who provided me with help and a name for this module.
-Richard Clamp has provided invaluable help to debug this module.
+James Duncan and Arthur Bergman who helped me and found a name for this module.
+Leon Brocard and Richard Clamp have provided invaluable help to debug this module.
 
 =head1 AUTHOR
 
 Pierre Denis <pdenis@fotango.com>
 
+http://opensource.fotango.com/
+
 =head1 COPYRIGHT
 
-Copyright 2003 Fotango - All Rights Reserved.
+Copyright 2003, 2004 Fotango - All Rights Reserved.
 
 This module is released under the same license as Perl itself.
 

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use blib;
-use Data::Structure::Util qw(get_blessed has_circular_ref);
+use Data::Structure::Util qw(unbless get_blessed has_circular_ref); 
 use Data::Dumper;
 
 

@@ -3,11 +3,23 @@
 use blib;
 use strict;
 use warnings;
-use Data::Structure::Util qw(has_utf8 utf8_off utf8_on unbless get_blessed get_refs has_circular_ref signature);
 use Data::Dumper;
 
+our $PERL_HAS_UTF8;
+BEGIN {
+  if ($] < 5.008) {
+    eval q{ use Data::Structure::Util qw(signature) };
+    die $@ if $@;
+    $PERL_HAS_UTF8 = 0;
+  }
+  else {
+    eval q{ use Data::Structure::Util qw(has_utf8 utf8_off utf8_on signature) };
+    die $@ if $@;
+    $PERL_HAS_UTF8 = 1;
+  }
+}
 
-use Test::Simple tests => 15;
+use Test::More tests => 15;
 
 ok(1,"we loaded fine...");
 
@@ -38,9 +50,19 @@ ok( signature() eq signature(), "empty list");
 ok( my $sigundef = signature(undef), "none");
 ok( $sigundef ne signature(undef), "none");
 
-my %hash = ( key1 => "Hello" );
-utf8_off(\%hash);
-my $sig5 = signature(\%hash);
-ok( $sig5 eq signature(\%hash), "signature 5");
-utf8_on(\%hash);
-ok( $sig5 ne signature(\%hash), "signature 5");
+
+# BELOW THIS LINE REQUIRES PERL 5.8.0 OR GREATER
+SKIP: {
+  unless ($PERL_HAS_UTF8) {
+    my $reason = "This version of perl ($]) doesn't have proper utf8 support, 5.8.0 or higher is needed";
+    skip($reason, 2);
+    exit;
+  }
+  my %hash = ( key1 => "Hello" );
+  utf8_off(\%hash);
+  my $sig5 = signature(\%hash);
+  ok( $sig5 eq signature(\%hash), "signature 5");
+  utf8_on(\%hash);
+  ok( $sig5 ne signature(\%hash), "signature 5");
+}
+

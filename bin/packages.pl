@@ -47,3 +47,14 @@ sub next_package {
   }
 }
 
+=head1 NAME
+
+packages.pl
+
+=head1 DESCRIPTION
+
+Search through all the global variables in all packagse 
+for any circular reference.
+
+=cut
+

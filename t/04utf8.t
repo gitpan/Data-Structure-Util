@@ -14,11 +14,14 @@ BEGIN {
     exit;
   }
   else {
-    eval q{ use Data::Structure::Util qw(has_utf8 utf8_off utf8_on) };
-    eval q{ use Test::Simple tests => 18 };
+    eval q{
+      use Data::Structure::Util qw(has_utf8 utf8_off utf8_on _utf8_on _utf8_off);
+      use Test::Simple tests => 24;
+    };
     die $@ if $@;
   }
-}  
+}
+
 
 ok(1,"we loaded fine...");
 
@@ -27,7 +30,7 @@ my $string = '';
 foreach my $v ( 32 .. 126, 195 .. 255 ) {
   $string .= chr($v);
 }
-        
+
 my $hash = {
               key1 => $string . "\n",
            };
@@ -79,7 +82,7 @@ sub compare {
 
 sub test_utf8 {
   my $hash = shift;
-  
+
   eval q{ use Encode };
   if ($@) {
     warn "Encode not installed - will try XML::Simple\n";
@@ -96,3 +99,16 @@ sub test_utf8 {
   $hash2->{key1} = $utf8;
   $hash2;
 }
+
+
+use utf8;
+
+my $wide = { hello => [ 'world ᛰ' ] };
+ok( has_utf8($wide) );
+ok( _utf8_off($wide), "remove utf8 flag" );
+ok( ! has_utf8($wide) );
+
+my $latin = { hello => [ 'world' ] };
+ok( ! has_utf8($latin) );
+ok( _utf8_on($latin), "added utf8 flag" );
+ok( has_utf8($latin) );

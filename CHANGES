@@ -1,7 +1,11 @@
 Revision history for Perl module Data::Structure::Util
 
+0.10 Sat Jun 26 19:25:00 2004
+  - Updated tests to be compatible vith perl 5.6
+  - Added _utf8_on() and _utf8_off()
+
 0.09 Fri Mar 26 15:10:00 2004
-  - Updated tests to pass on perls without unicode - Tom Insam and Jeremy Yoder
+  - Updated tests to pass on perls without unicode - tom
   - Updated doc
 
 0.08 Mon Jan 20 12:00:00 2004
@@ -36,7 +40,7 @@ Revision history for Perl module Data::Structure::Util
   - Fixed compilations issues with old versions of gcc - Thanks Leon
   - has_utf8(), utf8_on() and utf8_off() now return the first parameter
   - skip utf8 tests if perl version < 5.8.0
-  - Removed SIGNATURE from MANIFEST 
+  - Removed SIGNATURE from MANIFEST
 
 0.01 Fri Oct 31 14:00:00 2003
   - original version

@@ -8,7 +8,7 @@
 #  define dsWARN(msg)
 #endif
 #define PTRLEN 40
-  
+
 
 /*
    Generate a string containing the address,
@@ -30,7 +30,7 @@ bool _utf8_set(SV* sv, HV* seen, int onoff) {
   HV* myHash;
   HE* HEntry;
   SV** AValue;
-  
+
 redo_utf8:
   if (SvROK(sv)) {
     if (has_seen(sv, seen))
@@ -66,6 +66,60 @@ redo_utf8:
       hv_iterinit(myHash);
       while( HEntry = hv_iternext(myHash) ) {
         _utf8_set(HeVAL(HEntry), seen, onoff);
+      }
+      break;
+    }
+  }
+  return TRUE;
+}
+
+
+/*
+
+Change utf8 flag
+
+*/
+bool _utf8_flag_set(SV* sv, HV* seen, int onoff) {
+  I32 i;
+  HV* myHash;
+  HE* HEntry;
+  SV** AValue;
+
+redo_flag_utf8:
+  if (SvROK(sv)) {
+    if (has_seen(sv, seen))
+      return TRUE;
+    sv = SvRV(sv);
+    goto redo_flag_utf8;
+  }
+
+  switch (SvTYPE(sv)) {
+
+    case SVt_PV:
+    case SVt_PVNV: {
+      dsWARN("string (PV)\n");
+      dsWARN(SvUTF8(sv) ? "UTF8 is on\n" : "UTF8 is off\n");
+      if (onoff && ! SvUTF8(sv)) {
+        SvUTF8_on(sv);
+      } else if (! onoff && SvUTF8(sv)) {
+        SvUTF8_off(sv);
+      }
+      break;
+    }
+    case SVt_PVAV: {
+      dsWARN("Found array\n");
+      for(i = 0; i <= av_len((AV*) sv); i++) {
+        AValue = av_fetch((AV*) sv, i, 0);
+        _utf8_flag_set(*AValue, seen, onoff);
+      }
+      break;
+    }
+    case SVt_PVHV: {
+      dsWARN("Found hash\n");
+      myHash = (HV*) sv;
+      hv_iterinit(myHash);
+      while( HEntry = hv_iternext(myHash) ) {
+        _utf8_flag_set(HeVAL(HEntry), seen, onoff);
       }
       break;
     }
@@ -142,7 +196,7 @@ SV* _unbless(SV* sv, HV* seen) {
 
 redo_unbless:
   if (SvROK(sv)) {
-    
+
     if (has_seen(sv, seen))
       return sv;
 
@@ -189,7 +243,7 @@ AV* _get_blessed(SV* sv, HV* seen, AV* objects) {
   SV** AValue;
   HV* myHash;
   HE* HEntry;
-  
+
   if (SvROK(sv)) {
 
     if (has_seen(sv, seen))
@@ -199,7 +253,7 @@ AV* _get_blessed(SV* sv, HV* seen, AV* objects) {
       SvREFCNT_inc(sv);
       av_push(objects, sv);
     }
-  
+
   } else {
 
     switch (SvTYPE(sv)) {
@@ -220,7 +274,7 @@ AV* _get_blessed(SV* sv, HV* seen, AV* objects) {
       }
     }
   }
-  
+
   return objects;
 }
 
@@ -242,7 +296,7 @@ AV* _get_refs(SV* sv, HV* seen, AV* objects) {
     _get_refs(SvRV(sv), seen, objects);
     SvREFCNT_inc(sv);
     av_push(objects, sv);
-  
+
   } else {
 
     switch (SvTYPE(sv)) {
@@ -448,7 +502,7 @@ SV* _circular_off(SV *sv, HV *parents, HV *seen, SV *counter) {
         sv_inc(counter);
       }
     } else {
-      
+
       if (hv_exists(seen, addr, len)) {
         dsWARN("circular reference on weak ref");
         return &PL_sv_undef;
@@ -533,7 +587,7 @@ testvar:
       printf("to ");
     	re = SvRV(re);
       goto testvar;
-  
+
   } else {
 
     switch (SvTYPE(re)) {
@@ -575,7 +629,7 @@ testvar:
           _dump_any(*AValue, seen, depth);
         }
         break;
-      
+
       case SVt_PVHV:
         printf("a hash (PVHV)\n");
         HV* myHash = (HV*) re;
@@ -594,7 +648,7 @@ testvar:
         }
         if (! count) printf("Empty\n");
         break;
-      
+
       case SVt_PVCV:
         printf("a code (PVCV)\n");
         return;
@@ -668,6 +722,28 @@ OUTPUT:
 MODULE = Data::Structure::Util     PACKAGE = Data::Structure::Util
 
 bool
+_utf8_off_xs(sv)
+    SV* sv
+PROTOTYPE: $
+CODE:
+    _utf8_flag_set(sv, (HV*) sv_2mortal((SV*) newHV()), 0);
+
+
+MODULE = Data::Structure::Util     PACKAGE = Data::Structure::Util
+
+bool
+_utf8_on_xs(sv)
+    SV* sv
+PROTOTYPE: $
+CODE:
+    RETVAL = _utf8_flag_set(sv, (HV*) sv_2mortal((SV*) newHV()), 1);
+OUTPUT:
+    RETVAL
+
+
+MODULE = Data::Structure::Util     PACKAGE = Data::Structure::Util
+
+bool
 has_utf8_xs(sv)
     SV* sv
 PROTOTYPE: $
@@ -713,8 +789,8 @@ CODE:
     RETVAL = _circular_off(sv, (HV*) sv_2mortal((SV*) newHV()), (HV*) sv_2mortal((SV*) newHV()), newSViv(0));
 OUTPUT:
     RETVAL
-    
-    
+
+
 MODULE = Data::Structure::Util     PACKAGE = Data::Structure::Util
 
 AV*
