@@ -1,6 +1,10 @@
 Revision history for Perl module Data::Structure::Util
 
-0.06 Tue Dec 30 10:27:00
+0.07 Mon Jan 19 09:50:00 2004
+  - Added get_refs() and signature()
+  - Updated doc
+
+0.06 Tue Dec 30 10:27:00 2003
   - Changed C++ style comments to C style comments - Thanks leon
   - Fixed bug in has_circular_ref() and circular_off() where there was a weak ref:
     in some cases, a circular ref could be wrongly reported.

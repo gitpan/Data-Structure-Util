@@ -8,6 +8,7 @@ Module::Build->new
     license         => 'perl',
     requires        => {
                         perl => '5.6.0',
+                        Digest::MD5 => 0,
                        },
     build_requires => {
                         Test::Pod    => 0,

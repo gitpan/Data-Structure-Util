@@ -3,6 +3,8 @@ package Data::Structure::Util;
 use strict;
 use warnings::register;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
+use Data::Dumper;
+use Digest::MD5 qw(md5_hex);
 
 require Exporter;
 require DynaLoader;
@@ -10,13 +12,13 @@ require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
-$VERSION = '0.06';
+$VERSION = '0.07';
 BEGIN {
   if ($] < 5.008) {
-    @EXPORT_OK = qw(unbless get_blessed has_circular_ref circular_off);
+    @EXPORT_OK = qw(unbless get_blessed get_refs has_circular_ref circular_off signature);
   }
   else {
-    @EXPORT_OK = qw(has_utf8 utf8_off utf8_on unbless get_blessed has_circular_ref circular_off);
+    @EXPORT_OK = qw(has_utf8 utf8_off utf8_on unbless get_blessed get_refs has_circular_ref circular_off signature);
   }
 }
 
@@ -43,6 +45,11 @@ sub get_blessed {
   get_blessed_xs($_[0]);
 }
 
+sub get_refs {
+  $_[0] or return [];
+  get_refs_xs($_[0]);
+}
+
 sub has_circular_ref {
   $_[0] or return $_[0];
   has_circular_ref_xs($_[0]);
@@ -51,6 +58,11 @@ sub has_circular_ref {
 sub circular_off {
   $_[0] or return $_[0];
   circular_off_xs($_[0]);
+}
+
+sub signature {
+  @_ ? md5_hex(Dumper([ $_[0], signature_xs($_[0]) ]))
+     : '0' x 32;
 }
 
 1;
@@ -118,6 +130,11 @@ Remove the blessing from any object found wihtin the date structure referenced b
 Returns an array ref of all objects within the data structure. The data structure is parsed deep first,
 so the top most objects should be the last elements of the array.
 
+=item get_refs($ref)
+
+Decomposes the data structure by returning an array ref of all references within. The data structure is parsed deep first,
+so the top most references should be the last elements of the array.
+
 =item has_circular_ref($ref)
 
 If a circular reference is detected, it returns the reference to an element composing the circuit.
@@ -127,13 +144,27 @@ If the version of perl enables weaken references, these are skipped and are not 
 Example:
 
   if ($circular_ref = has_circular_ref($ref)) {
-    warn "Got a circular reference " . Dumper($circular_ref) . "You can use 'weaken' from Scalar::Util module to break it";
+    warn "Got a circular reference " . Dumper($circular_ref) .
+         "You can use 'weaken' from Scalar::Util module to break it";
   }
 
 =item circular_off($ref)
 
 Weaken any reference part of a circular reference in an attempt to break it.
-Returns the number of references which has been newly weaken.
+Returns the number of references newly weaken.
+
+=item signature($ref)
+
+Returns a md5 of the $ref. Any change in the structure should change the signature.
+It examines the structure, addresses, value types and flags to generate the signature.
+
+Example:
+
+  $ref1 = { key1 => [] };
+  $ref2 = $ref1;
+  $ref2->{key1} = [];
+
+signature($ref1) and signature($ref2) will be different, even if they look the same using Data::Dumper;
 
 =back
 
@@ -145,11 +176,13 @@ See the excellent article http://www.perl.com/pub/a/2002/08/07/proxyobject.html 
 
 =head1 BUGS
 
-Using perl 5.8.0, there is a pathological case where circular_off will fail, I don't know why yet:
+  Using perl 5.8.0, there is a pathological case where circular_off will fail, I don't know why yet:
   my $obj8 = [];
   $obj8->[0] = \$obj8;
   circular_off($obj8); # Will throw an error
 
+  signature() is sensitive to the hash randomisation algorithm
+  
 =head1 THANKS TO
 
 James Duncan and Arthur Bergman who provided me with help and a name for this module

@@ -9,6 +9,17 @@
 #endif
 #define PTRLEN 40
   
+
+/*
+   Generate a string containing the address,
+   the flags and the Sv type
+*/
+
+SV* _get_infos(SV* sv) {
+  return newSVpvf("%p-%i-%i", sv, sv->sv_flags, SvTYPE(sv));
+}
+
+
 /*
 
 Upgrade strings to utf8
@@ -213,6 +224,99 @@ AV* _get_blessed(SV* sv, HV* seen, AV* objects) {
   return objects;
 }
 
+
+/*
+
+Returns references within a data structure, deep first
+
+*/
+AV* _get_refs(SV* sv, HV* seen, AV* objects) {
+  I32 i;
+  SV** AValue;
+  HV* myHash;
+  HE* HEntry;
+  
+  if (SvROK(sv)) {
+
+    if (has_seen(sv, seen))
+      return objects;
+    _get_refs(SvRV(sv), seen, objects);
+    SvREFCNT_inc(sv);
+    av_push(objects, sv);
+  
+  } else {
+
+    switch (SvTYPE(sv)) {
+      case SVt_PVAV: {
+        for(i = 0; i <= av_len((AV*) sv); i++) {
+          AValue = av_fetch((AV*) sv, i, 0);
+          _get_refs(*AValue, seen, objects);
+        }
+        break;
+      }
+      case SVt_PVHV: {
+        myHash = (HV*) sv;
+        hv_iterinit(myHash);
+        while( HEntry = hv_iternext(myHash) ) {
+          _get_refs(HeVAL(HEntry), seen, objects);
+        }
+        break;
+      }
+    }
+  }
+  
+  return objects;
+}
+
+
+/*
+
+Returns a signature of the structure
+
+*/
+AV* _signature(SV* sv, HV* seen, AV* infos) {
+  I32 i;
+  U32 len;
+  SV** AValue;
+  HV* myHash;
+  HE* HEntry;
+  char* HKey;
+
+testvar1:
+
+  if (SvROK(sv)) {
+      if (has_seen(sv, seen))
+        return infos;
+
+      av_push(infos, _get_infos(sv));
+      sv = SvRV(sv);
+      goto testvar1;
+
+  } else {
+
+    av_push(infos, _get_infos(sv));
+    switch (SvTYPE(sv)) {
+      case SVt_PVAV:
+        for(i = 0; i <= av_len((AV*) sv); i++) {
+          AValue = av_fetch((AV*) sv, i, 0);
+          _signature(*AValue, seen, infos);
+        }
+        break;
+
+      case SVt_PVHV:
+        myHash = (HV*) sv;
+        hv_iterinit(myHash);
+        while( HEntry = hv_iternext(myHash) ) {
+          STRLEN len;
+          HKey = HePV(HEntry, len);
+          _signature(HeVAL(HEntry), seen, infos);
+        }
+        break;
+
+    }
+  }
+  return infos;
+}
 
 
 /*
@@ -621,5 +725,29 @@ get_blessed_xs(sv)
 PROTOTYPE: $
 CODE:
     RETVAL = _get_blessed(sv, newHV(), newAV());
+OUTPUT:
+    RETVAL
+
+
+MODULE = Data::Structure::Util     PACKAGE = Data::Structure::Util
+
+AV*
+get_refs_xs(sv)
+    SV* sv
+PROTOTYPE: $
+CODE:
+    RETVAL = _get_refs(sv, newHV(), newAV());
+OUTPUT:
+    RETVAL
+
+
+MODULE = Data::Structure::Util     PACKAGE = Data::Structure::Util
+
+AV*
+signature_xs(sv)
+    SV* sv
+PROTOTYPE: $
+CODE:
+    RETVAL = _signature(sv, newHV(), newAV());
 OUTPUT:
     RETVAL
