@@ -7,7 +7,7 @@ use Data::Structure::Util qw(unbless get_blessed get_refs has_circular_ref);
 use Data::Dumper;
 
 
-use Test::Simple tests => 16;
+use Test::More tests => 18;
 
 ok(1,"we loaded fine...");
 
@@ -26,7 +26,7 @@ $obj->{key3}->{key33} = $obj->{key3}->{key31};
 
 
 ok( my $objects = get_refs($obj), "Got references");
-ok( @$objects == 9, "got all");
+is( @$objects,  9, "got all");
 my $found;
 foreach my $ref (@$objects) {
   if ($ref == $obj) { $found++; ok(1) };
@@ -39,9 +39,18 @@ foreach my $ref (@$objects) {
   if ($ref == $obj->{key5}) { $found++; ok(1) };
   if ($ref == \$obj) { $found++; ok(1) };
 }
-ok( $found == @$objects, "Found " . scalar(@$objects) );
+is( $found, @$objects, "Found " . scalar(@$objects) );
 
-ok( ! @{get_refs(undef)}, "undef");
-ok( ! @{get_refs('hello')}, "hello");
-ok( ! @{get_refs()}, "undef");
+is(@{get_refs(undef)}, 0, "undef");
+is(@{get_refs('hello')}, 0, "hello");
+is(@{get_refs()}, 0, "undef");
 
+my $a;
+my $r;
+$r = \$r;
+$a->[1] = $r;
+
+my $got = get_refs($a);
+
+is (scalar @$got, 2, "2 references");
+is ($got->[0], $r, "list is depth first, so first result should be the scalar");

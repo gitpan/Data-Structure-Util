@@ -16,7 +16,7 @@ BEGIN {
   else {
     eval q{
       use Data::Structure::Util qw(has_utf8 utf8_off utf8_on _utf8_on _utf8_off);
-      use Test::Simple tests => 24;
+      use Test::More tests => 27;
     };
     die $@ if $@;
   }
@@ -47,24 +47,24 @@ else {
 
 $string = $hash->{key1};
 my $string2 = $hash2->{key1};
-ok( utf8_on($string) eq $string, "Got string back");
-ok( utf8_on($string2) eq $string2, "Got string back");
-ok( utf8_off($string) eq $string, "Got string back");
-ok( utf8_off($string2) eq $string2, "Got string back");
+is( utf8_on($string), $string, "Got string back");
+is( utf8_on($string2), $string2, "Got string back");
+is( utf8_off($string), $string, "Got string back");
+is( utf8_off($string2), $string2, "Got string back");
 
 ok( ! has_utf8($hash), "Has not utf8");
 ok( has_utf8($hash2), "Has utf8");
-ok( has_utf8($hash2) eq $hash2, "Has utf8");
+is( has_utf8($hash2), $hash2, "Has utf8");
 
-ok( $hash2->{key1} eq $hash->{key1}, "Same string");
+is( $hash2->{key1}, $hash->{key1}, "Same string");
 ok( ! compare($hash2->{key1}, $hash->{key1}), "Different encoding");
 ok( utf8_off($hash2), "Have decoded utf8");
 ok( ! has_utf8($hash2), "Has not utf8");
-ok( $hash2->{key1} eq $hash->{key1}, "Same string");
+is( $hash2->{key1}, $hash->{key1}, "Same string");
 ok( compare($hash2->{key1}, $hash->{key1}), "Same encoding");
 
 ok( utf8_on($hash), "Have encoded utf8");
-ok( $hash2->{key1} eq $hash->{key1}, "Same string");
+is( $hash2->{key1}, $hash->{key1}, "Same string");
 ok( ! compare($hash2->{key1}, $hash->{key1}), "Different encoding");
 
 
@@ -112,3 +112,9 @@ my $latin = { hello => [ 'world' ] };
 ok( ! has_utf8($latin) );
 ok( _utf8_on($latin), "added utf8 flag" );
 ok( has_utf8($latin) );
+
+my $a;
+$a->[1] = "Pie";
+ok( ! has_utf8($a) );
+ok( utf8_on($a), "convert to utf8" );
+ok( _utf8_off($a), "utf8" );

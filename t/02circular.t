@@ -3,22 +3,20 @@
 use strict;
 use warnings;
 use blib;
-use Data::Structure::Util qw(unbless get_blessed has_circular_ref); 
+use Data::Structure::Util qw(unbless get_blessed has_circular_ref);
 use Data::Dumper;
 
 
 our $WEAKEN;
-BEGIN {
-  eval q{ use Scalar::Util qw(weaken isweak) };
-  if (! $@ and defined &Scalar::Util::weaken) {
-    eval q{ use Test::Simple tests => 19 };
-    $WEAKEN = 1 ;
-  }
-  else {
-    eval q{ use Test::Simple tests => 13 };
-  }
+
+eval q{ use Scalar::Util qw(weaken isweak) };
+if (! $@ and defined &Scalar::Util::weaken) {
+  $WEAKEN = 1;
 }
 
+use Test::More;
+
+plan tests => 14 + 6 * $WEAKEN;
 
 ok(1,"we loaded fine...");
 
@@ -77,14 +75,14 @@ ok(! has_circular_ref($thing), "Not a circular ref");
 
 my $ref = has_circular_ref($obj);
 ok($ref, "Got a circular reference");
-ok($ref == $obj, "reference is correct");
+is($ref, $obj, "reference is correct");
 
 ok(! has_circular_ref($obj2), "No circular reference");
 ok(has_circular_ref($obj3), "Got a circular reference");
 ok(has_circular_ref($obj4), "Got a circular reference");
 ok(has_circular_ref($obj5), "Got a circular reference");
 ok(has_circular_ref($obj6), "Got a circular reference");
-ok($obj6 == has_circular_ref($obj6), "Match reference");
+is($obj6,  has_circular_ref($obj6), "Match reference");
 
 
 ok(! has_circular_ref(), "No circular reference");
@@ -117,3 +115,10 @@ else {
   warn "Scalar::Util XS version not installed, some tests skipped\n";
 }
 
+my $a;
+my $r;
+$a->[1] = \$r;
+
+
+ok (!has_circular_ref($a),
+    "circular ref where av_fetch() returns 0 should not SEGV");

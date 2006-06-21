@@ -16,7 +16,7 @@
 */
 
 SV* _get_infos(SV* sv) {
-  return newSVpvf("%p-%i-%i", sv, sv->sv_flags, SvTYPE(sv));
+  return newSVpvf("%p-%i-%i", sv, SvFLAGS(sv), SvTYPE(sv));
 }
 
 
@@ -50,7 +50,8 @@ redo_utf8:
       dsWARN("Found array\n");
       for(i = 0; i <= av_len((AV*) sv); i++) {
         AValue = av_fetch((AV*) sv, i, 0);
-        _utf8_set(*AValue, seen, onoff);
+        if (AValue)
+          _utf8_set(*AValue, seen, onoff);
       }
       break;
     }
@@ -72,7 +73,7 @@ redo_utf8:
       {
         /* it's a string! do the transformation if we need to */
 
-	dsWARN("string (PV)\n");
+        dsWARN("string (PV)\n");
         dsWARN(SvUTF8(sv) ? "UTF8 is on\n" : "UTF8 is off\n");
         if (onoff && ! SvUTF8(sv)) {
           sv_utf8_upgrade(sv);
@@ -122,7 +123,8 @@ redo_flag_utf8:
       dsWARN("Found array\n");
       for(i = 0; i <= av_len((AV*) sv); i++) {
         AValue = av_fetch((AV*) sv, i, 0);
-        _utf8_flag_set(*AValue, seen, onoff);
+        if (AValue)
+          _utf8_flag_set(*AValue, seen, onoff);
       }
       break;
     }
@@ -200,7 +202,7 @@ redo_has_utf8:
       dsWARN("Found array\n");
       for(i = 0; i <= av_len((AV*) sv); i++) {
         AValue = av_fetch((AV*) sv, i, 0);
-        if (_has_utf8(*AValue, seen))
+        if (AValue && _has_utf8(*AValue, seen))
           return TRUE;
       }
       break;
@@ -252,7 +254,8 @@ redo_unbless:
       dsWARN("an array\n");
       for(i = 0; i <= av_len((AV*) sv); i++) {
         AValue = av_fetch((AV*) sv, i, 0);
-        _unbless(*AValue, seen);
+        if (AValue)
+          _unbless(*AValue, seen);
       }
       break;
     }
@@ -297,7 +300,8 @@ AV* _get_blessed(SV* sv, HV* seen, AV* objects) {
       case SVt_PVAV: {
         for(i = 0; i <= av_len((AV*) sv); i++) {
           AValue = av_fetch((AV*) sv, i, 0);
-          _get_blessed(*AValue, seen, objects);
+          if (AValue)
+            _get_blessed(*AValue, seen, objects);
         }
         break;
       }
@@ -340,7 +344,8 @@ AV* _get_refs(SV* sv, HV* seen, AV* objects) {
       case SVt_PVAV: {
         for(i = 0; i <= av_len((AV*) sv); i++) {
           AValue = av_fetch((AV*) sv, i, 0);
-          _get_refs(*AValue, seen, objects);
+          if (AValue)
+            _get_refs(*AValue, seen, objects);
         }
         break;
       }
@@ -388,7 +393,8 @@ testvar1:
       case SVt_PVAV:
         for(i = 0; i <= av_len((AV*) sv); i++) {
           AValue = av_fetch((AV*) sv, i, 0);
-          _signature(*AValue, seen, infos);
+          if (AValue)
+            _signature(*AValue, seen, infos);
         }
         break;
 
@@ -480,9 +486,11 @@ SV* _has_circular_ref(SV* sv, HV* parents, HV* seen) {
         warn(errmsg);
 #endif
         AValue = av_fetch((AV*) sv, i, 0);
-        found = _has_circular_ref(*AValue, parents, seen);
-        if (SvOK(found))
-          return found;
+        if (AValue) {
+          found = _has_circular_ref(*AValue, parents, seen);
+          if (SvOK(found))
+            return found;
+        }
       }
       break;
     }
@@ -574,10 +582,14 @@ SV* _circular_off(SV *sv, HV *parents, HV *seen, SV *counter) {
           warn(errmsg);
 #endif
           AValue = av_fetch((AV*) sv, i, 0);
-          _circular_off(*AValue, parents, seen, counter);
-          if (SvTYPE(sv) != SVt_PVAV)
-            croak("Unknown error after weakening a reference in array"); /* In some circumstances, weakening a reference screw things up */
-        }
+	  if (AValue) {
+	    _circular_off(*AValue, parents, seen, counter);
+	    if (SvTYPE(sv) != SVt_PVAV) {
+	      /* In some circumstances, weakening a reference screw things up */
+	      croak("Array that we were weakening suddenly turned into a scalar of type type %d", SvTYPE(sv));
+	    }
+	  }
+	}
         break;
       }
       case SVt_PVHV: { /* Hash */
@@ -592,8 +604,10 @@ SV* _circular_off(SV *sv, HV *parents, HV *seen, SV *counter) {
           warn(errmsg);
 #endif
           _circular_off(HeVAL(HEntry), parents, seen, counter);
-          if (SvTYPE(sv) != SVt_PVHV)
-            croak("Unknown error after weakening a reference in hash"); /* In some circumstances, weakening a reference screw things up */
+          if (SvTYPE(sv) != SVt_PVHV) {
+            /* In some circumstances, weakening a reference screw things up */
+	    croak("Hash that we were weakening suddenly turned into a scalar of type type %d", SvTYPE(sv));
+	  }
         }
         break;
       }
@@ -622,7 +636,7 @@ testvar:
       if (sv_isobject(re)) printf(" blessed ");
 
       printf("to ");
-    	re = SvRV(re);
+        re = SvRV(re);
       goto testvar;
 
   } else {
@@ -658,33 +672,44 @@ testvar:
         printf("a PVLV\n");
         break;
       case SVt_PVAV:
-        printf("an array of %u elems (PVAV)\n", av_len((AV*) re) + 1);
-        I32 i;
-        for(i = 0; i <= av_len((AV*) re); i++) {
-          SV** AValue = av_fetch((AV*) re, i, 0);
-          printf("NEXT ELEM is ");
-          _dump_any(*AValue, seen, depth);
+        {
+          I32 i;
+
+          printf("an array of %u elems (PVAV)\n", av_len((AV*) re) + 1);
+          for(i = 0; i <= av_len((AV*) re); i++) {
+            SV** AValue = av_fetch((AV*) re, i, 0);
+	    if (AValue) {
+	      printf("NEXT ELEM is ");
+	      _dump_any(*AValue, seen, depth);
+	    } else {
+	      printf("NEXT ELEM was undef");
+	    }
+          }
+          break;
         }
-        break;
 
       case SVt_PVHV:
-        printf("a hash (PVHV)\n");
-        HV* myHash = (HV*) re;
-        HE* HEntry;
-        int count = 0;
-        hv_iterinit(myHash);
-        while( HEntry = hv_iternext(myHash) ) {
-          count++;
-          STRLEN len;
-          char* HKey = HePV(HEntry, len);
-          int i;
-          for(i = 0; i < depth; i++)
-            printf("\t");
-          printf("NEXT KEY is %s, value is ", HKey);
-          _dump_any(HeVAL(HEntry), seen, depth + 1);
+        {
+          HV* myHash = (HV*) re;
+          HE* HEntry;
+          int count = 0;
+
+          printf("a hash (PVHV)\n");
+          hv_iterinit(myHash);
+          while( HEntry = hv_iternext(myHash) ) {
+            STRLEN len;
+            char* HKey = HePV(HEntry, len);
+            int i;
+
+            count++;
+            for(i = 0; i < depth; i++)
+              printf("\t");
+            printf("NEXT KEY is %s, value is ", HKey);
+            _dump_any(HeVAL(HEntry), seen, depth + 1);
+          }
+          if (! count) printf("Empty\n");
+          break;
         }
-        if (! count) printf("Empty\n");
-        break;
 
       case SVt_PVCV:
         printf("a code (PVCV)\n");

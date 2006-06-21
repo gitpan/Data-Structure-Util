@@ -1,22 +1,8 @@
 --- #YAML:1.0
 name: Data-Structure-Util
-version: 0.11
+version: 0.12
+author:
+  - Pierre Denis <pdenis@fotango.com>
+abstract: Change nature of data within a structure
 license: perl
-distribution_type: module
-requires:
-  Digest::MD5: 0
-  perl: 5.6.0
-recommends: {}
-build_requires:
-  Clone: 0
-  Scalar::Util: 1.01
-  Test::More: 0
-  Test::Pod: 0
-  Test::Simple: 0
-conflicts: {}
-dynamic_config: 0
-provides:
-  Data::Structure::Util:
-    file: lib/Data/Structure/Util.pm
-    version: 0.11
-generated_by: Module::Build version 0.21
+generated_by: Module::Build version 0.2609, without YAML.pm

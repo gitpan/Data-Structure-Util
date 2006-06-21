@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use blib;
-use Data::Structure::Util qw(has_circular_ref circular_off); 
+use Data::Structure::Util qw(has_circular_ref circular_off);
 use Data::Dumper;
 
 
@@ -15,7 +15,7 @@ BEGIN {
     exit;
   }
   else {
-    eval q{ use Test::More tests => 32 };
+    eval q{ use Test::More tests => 35 };
   }
 }
 
@@ -78,7 +78,6 @@ ok(! has_circular_ref($thing), "Not a circular ref");
 is(circular_off($thing), 0, "No circular ref broken");
 }
 
-print "foo\n";
 my $ref = has_circular_ref($obj);
 ok($ref, "Got a circular reference");
 is(circular_off($obj), 1, "Weaken circular references");
@@ -141,8 +140,15 @@ ok( isweak( $obj9->{key1} ), "is weak");
 ok( ! has_circular_ref($obj9), "no circular");
 ok( ! circular_off($obj9), "no circular");
 
-# This test is failing - don't know why - I suspect perl 5.8.0
-# my $obj8 = [];
-# $obj8->[0] = \$obj8;
-# is( circular_off($obj8), 1, "Removed circular refs");
+$obj8 = {};
+$obj8->{a} = \$obj8;
+is( circular_off($obj8), 1, "Removed circular refs");
 
+$obj8 = [];
+$obj8->[0] = \$obj8;
+is( circular_off($obj8), 1, "Removed circular refs");
+
+
+$obj8 = [];
+$obj8->[1] = \$obj8;
+is( circular_off($obj8), 1, "Removed circular refs");

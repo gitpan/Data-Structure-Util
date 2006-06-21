@@ -12,7 +12,7 @@ require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 @EXPORT_OK = qw(
    unbless get_blessed get_refs has_circular_ref
@@ -66,9 +66,16 @@ sub has_circular_ref {
   has_circular_ref_xs($_[0]);
 }
 
+# Need to hold another reference to the passed in value to avoid this
+# patholgical case throwing an error
+#  my $obj8 = [];
+#  $obj8->[0] = \$obj8;
+#  circular_off($obj8); # Used to throw an error
+
 sub circular_off {
-  $_[0] or return $_[0];
-  circular_off_xs($_[0]);
+  my $r = $_[0];
+  $r or return $r;
+  circular_off_xs($r);
 }
 
 sub signature {
@@ -447,13 +454,6 @@ The development version of this module and others can be found at
 http://opensource.fotango.com/svn/trunk/Data-Structure-Util/
 
 =head1 BUGS
-
-Using perl 5.8.0, there is a pathological case where circular_off will
-fail, I don't know why yet:
-
-  my $obj8 = [];
-  $obj8->[0] = \$obj8;
-  circular_off($obj8); # Will throw an error
 
 C<signature()> is sensitive to the hash randomisation algorithm
 

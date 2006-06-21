@@ -7,7 +7,7 @@ use Data::Structure::Util qw(unbless get_blessed has_circular_ref);
 use Data::Dumper;
 
 
-use Test::Simple tests => 11;
+use Test::More tests => 17;
 
 ok(1,"we loaded fine...");
 
@@ -28,13 +28,27 @@ $obj->{key3}->{key33} = $obj->{key3}->{key31};
 ok( my $objects = get_blessed($obj), "Got objects");
 ok( $objects->[1] == $obj->{key3}->{key32} || $objects->[1] == $obj->{key1}->[3] || $objects->[1] == $obj->{key5} , "Got object 1");
 ok( $objects->[2] == $obj->{key1}->[3] || $objects->[2] == $obj->{key3}->{key32} || $objects->[2] == $obj->{key5} , "Got object 2");
-ok( $objects->[3] == $obj, "Got top object");
-ok( ! @{get_blessed(undef)}, "undef");
-ok( ! @{get_blessed('hello')}, "hello");
-ok( ! @{get_blessed()}, "undef");
+is( $objects->[3], $obj, "Got top object");
+is(@{get_blessed(undef)}, 0, "undef");
+is(@{get_blessed('hello')}, 0, "hello");
+is(@{get_blessed()}, 0, "empty list");
 
 
-ok( $obj == unbless($obj), "Have unblessed obj");
-ok( ref $obj eq 'HASH', "Not blessed anymore");
-ok( ref $obj->{key1}->[3] eq 'HASH', "Not blessed anymore");
+is( $obj, unbless($obj), "Have unblessed obj");
+is( ref $obj, 'HASH', "Not blessed anymore");
+is( ref $obj->{key1}->[3], 'HASH', "Not blessed anymore");
 
+my $a;
+my $r;
+$r = bless \$r, 'Pie';
+$a->[1] = $r;
+
+my $got = get_blessed($a);
+
+is (scalar @$got, 1, "1 blessed thing");
+is ($got->[0], $r);
+is (ref ($got->[0]), 'Pie');
+
+is( $a, unbless($a), "Have unblessed array");
+is ($got->[0], $r);
+isnt (ref ($got->[0]), 'Pie');

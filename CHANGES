@@ -1,5 +1,35 @@
 Revision history for Perl module Data::Structure::Util
 
+0.12 Wed Jun 21 15:37:40 2006
+
+  - Check return value of av_fetch in the debug code
+  - Need to check the return value of av_fetch() in circular_off
+  - Avoid the "unknown error" (which was actually the hash or array we were
+    traversing suddenly being deleted from underneath us) by holding an additional
+    reference to the passed in structure.
+  - Make the "Unknown error" message a lot more helpful
+  - _circular_ref should check the return value of av_fetch
+  - Substitute a sane way of chosing the test plan
+  - Convert t/02circular to Test::More
+  - _signature should check the return value of av_fetch
+  - _get_refs should check the return value of av_fetch
+  - Convert t/05refs.t to Test::More
+  - Check the return value from av_fetch in _utf8_flag and _utf8_flag_set
+  - _has_utf8 should check the return value of av_fetch 
+  - convert 04utf8.t to Test::More
+  - Check return value from av_fetch in _unbless
+  - Check the return value from av_fetch is not NULL before deferencing it in
+    _get_blessed
+  - Use Test::More rather than Test::Simple in t/03bless.t
+  - Use Test::More's eq/ne functiosn rather than comparisons inside the
+    arguments to ok()
+  - Have to use a hash ref rather than a hash and keep taking references for
+    the signature test, as temporary refs are in the signature, and their
+    address can
+  - differ each time round the loop
+  - Remove C99-isms from the debugging code
+  - Use the SvFLAGS() macro rather than a direct structure access
+
 0.11 Fri Sep 10 11:00:00 2004
 
   - Fixed t/00pod.t for those who don't have Test::POD installed - Thanks Jeremy
