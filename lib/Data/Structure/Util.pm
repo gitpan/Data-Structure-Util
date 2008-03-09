@@ -1,10 +1,12 @@
 package Data::Structure::Util;
 
+use 5.008;
+
 use strict;
 use warnings::register;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
-use Data::Dumper;
-use Digest::MD5 qw(md5_hex);
+use Storable qw( freeze );
+use Digest::MD5 qw( md5_hex );
 
 require Exporter;
 require DynaLoader;
@@ -12,7 +14,7 @@ require AutoLoader;
 
 @ISA = qw(Exporter DynaLoader);
 
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 @EXPORT_OK = qw(
   unbless get_blessed get_refs has_circular_ref
@@ -80,7 +82,7 @@ sub circular_off {
 
 sub signature {
     return @_
-      ? md5_hex( Dumper( [ $_[0], signature_xs( $_[0] ) ] ) )
+      ? md5_hex( freeze( [ $_[0], signature_xs( $_[0] ) ] ) )
       : '0' x 32;
 }
 
